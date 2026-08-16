@@ -10,21 +10,29 @@ app.use(cors());
 app.use(express.json({ limit: '10mb' }));
 app.use(express.static(path.join(__dirname, '../public')));
 
-// Keep-Alive Ping
-app.get('/api/ping', (req, res) => res.status(200).json({ status: 'ONLINE' }));
+// Anti-Sleep Ping
+app.get('/api/ping', (req, res) => res.status(200).json({ status: 'ONLINE', timestamp: new Date().toISOString() }));
 
-// API: QR Status (DIPERBAIKI)
+// QR Status API dengan Filter Validasi Base64
 app.get('/api/qr-status', async (req, res) => {
   try {
     const records = await getAllRecords();
     const qrRecords = records.filter(r => r && r.type === 'system_qr');
-    
+
     if (qrRecords.length > 0) {
-      const latest = qrRecords[qrRecords.length - 1];
-      return res.json({
-        status: latest.status || 'DISCONNECTED',
-        qrDataUrl: latest.qrDataUrl || ''
-      });
+      // Ambil record paling baru dari belakang
+      for (let i = qrRecords.length - 1; i >= 0; i--) {
+        const item = qrRecords[i];
+        if (item.status === 'CONNECTED') {
+          return res.json({ status: 'CONNECTED', qrDataUrl: '' });
+        }
+        if (item.qrDataUrl && item.qrDataUrl.length > 20) {
+          return res.json({
+            status: item.status || 'DISCONNECTED',
+            qrDataUrl: item.qrDataUrl
+          });
+        }
+      }
     }
     return res.json({ status: 'DISCONNECTED', qrDataUrl: '' });
   } catch (err) {
@@ -32,26 +40,22 @@ app.get('/api/qr-status', async (req, res) => {
   }
 });
 
-// API: Contacts
 app.get('/api/contacts', async (req, res) => {
   const contacts = await getContacts();
   res.json(contacts);
 });
 
-// API: Messages
 app.get('/api/messages/:jid', async (req, res) => {
   const messages = await getMessages(req.params.jid);
   res.json(messages);
 });
 
-// API: Mode Toggle
 app.post('/api/mode', async (req, res) => {
   const { jid, mode } = req.body;
   await saveOrUpdateContact(jid, { mode, step: mode === 'bot' ? 'MAIN_MENU' : 'HUMAN' });
   res.json({ success: true });
 });
 
-// API: Rules
 app.get('/api/bot/rules', async (req, res) => {
   const rules = await getBotRules();
   res.json(rules);
