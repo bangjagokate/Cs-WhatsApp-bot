@@ -1,10 +1,11 @@
 {
   "name": "wa-laundry-system",
-  "version": "9.0.0",
-  "description": "Production-Ready WhatsApp CS Center with Vercel Keep-Alive Ping Engine",
+  "version": "10.0.0",
+  "description": "Enterprise WA CS Center & Bot Engine - Production Build for Vercel",
   "main": "api/index.js",
   "scripts": {
-    "start": "node api/index.js"
+    "start": "node api/index.js",
+    "build": "echo 'No build step required for static frontend & serverless API'"
   },
   "dependencies": {
     "cors": "^2.8.5",
