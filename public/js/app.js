@@ -11,7 +11,6 @@ const sendBtn = document.getElementById('sendBtn');
 const enableNotifBtn = document.getElementById('enableNotifBtn');
 const emptyChatPlaceholder = document.getElementById('emptyChatPlaceholder');
 
-// QR Modal Elements
 const qrModal = document.getElementById('qrModal');
 const qrImage = document.getElementById('qrImage');
 const qrLoader = document.getElementById('qrLoader');
@@ -23,6 +22,11 @@ const statusBadgeText = document.getElementById('statusBadgeText');
 function openQrModal() { qrModal.classList.remove('hidden'); }
 function closeQrModal() { qrModal.classList.add('hidden'); }
 
+// Auto Client Ping untuk Menjaga Vercel Serverless Selalu Panas (Anti-Sleep)
+setInterval(async () => {
+  try { await fetch('/api/ping'); } catch(e){}
+}, 30000);
+
 enableNotifBtn?.addEventListener('click', () => {
   if ("Notification" in window) {
     Notification.requestPermission().then(permission => {
@@ -31,7 +35,6 @@ enableNotifBtn?.addEventListener('click', () => {
   }
 });
 
-// Polling Engine QR Code dari Server Endpoint Vercel
 async function syncQrCodeStatus() {
   try {
     const res = await fetch('/api/qr-status');
@@ -139,7 +142,6 @@ async function sendMessage() {
 
 function escapeHtml(str) { return str ? str.replace(/[&<>"']/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m])) : ''; }
 
-// Init Run
 loadContacts();
 syncQrCodeStatus();
 setInterval(loadContacts, 5000);
