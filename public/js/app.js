@@ -1,4 +1,3 @@
-// Function Sync QR Code State
 async function syncQrCodeStatus() {
   try {
     const res = await fetch('/api/qr-status');
@@ -20,7 +19,8 @@ async function syncQrCodeStatus() {
 
       statusBadge.className = "px-3 py-1.5 bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 rounded-xl text-xs font-bold flex items-center gap-1.5 cursor-pointer shadow-lg";
       statusBadgeText.textContent = "WA Connected";
-    } else if (data.qrDataUrl && data.qrDataUrl.startsWith('data:image')) {
+    } else if (data.qrDataUrl && data.qrDataUrl.length > 50) {
+      // Tampilkan Gambar QR secara Instan
       qrImage.src = data.qrDataUrl;
       qrImage.classList.remove('hidden');
       qrLoader.classList.add('hidden');
@@ -31,15 +31,11 @@ async function syncQrCodeStatus() {
       statusBadge.className = "px-3 py-1.5 bg-amber-500/20 text-amber-300 border border-amber-500/30 rounded-xl text-xs font-bold flex items-center gap-1.5 cursor-pointer shadow-lg";
       statusBadgeText.textContent = "Scan QR WA";
     } else {
-      // Fallback ketika Engine Worker belum mengirim QR
       qrImage.classList.add('hidden');
       qrConnectedCheck.classList.add('hidden');
       qrLoader.classList.remove('hidden');
-      qrDeviceStatusText.textContent = "Menunggu Worker Node.js di Termux/Railway mengirim QR...";
+      qrDeviceStatusText.textContent = "Menghubungkan ke Engine WA...";
       qrDeviceStatusText.className = "text-xs font-semibold text-slate-400";
     }
   } catch(e){}
 }
-
-setInterval(syncQrCodeStatus, 2000);
-syncQrCodeStatus();
