@@ -32,7 +32,7 @@ async function createRecord(recordData) {
     });
     return await response.json();
   } catch (error) {
-    console.error('Remote DB Post Error:', error.message);
+    console.error('Remote DB Create Error:', error.message);
     return null;
   }
 }
