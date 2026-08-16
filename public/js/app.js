@@ -4,37 +4,81 @@ const contactList = document.getElementById('contactList');
 const messageList = document.getElementById('messageList');
 const activeChatName = document.getElementById('activeChatName');
 const activeJid = document.getElementById('activeJid');
+const avatarLetter = document.getElementById('avatarLetter');
 const modeToggle = document.getElementById('modeToggle');
+const msgInput = document.getElementById('msgInput');
+const sendBtn = document.getElementById('sendBtn');
 const enableNotifBtn = document.getElementById('enableNotifBtn');
+const emptyChatPlaceholder = document.getElementById('emptyChatPlaceholder');
+
+// Modal Elements
+const qrModal = document.getElementById('qrModal');
+const qrImage = document.getElementById('qrImage');
+const qrLoader = document.getElementById('qrLoader');
+const qrConnectedCheck = document.getElementById('qrConnectedCheck');
+const qrDeviceStatusText = document.getElementById('qrDeviceStatusText');
+const statusBadge = document.getElementById('statusBadge');
+const statusBadgeText = document.getElementById('statusBadgeText');
+
+function openQrModal() { qrModal.classList.remove('hidden'); }
+function closeQrModal() { qrModal.classList.add('hidden'); }
 
 enableNotifBtn?.addEventListener('click', () => {
   if ("Notification" in window) {
     Notification.requestPermission().then(permission => {
-      if (permission === "granted") {
-        alert("Notifikasi OS Browser Aktif!");
-      }
+      if (permission === "granted") alert("Notifikasi Browser Berhasil Diaktifkan!");
     });
   }
 });
 
-// Self Keep-Alive Client Ping Loop
-setInterval(async () => {
+// Realtime QR Code Polling Engine dari Remote Database API
+async function syncQrCodeStatus() {
   try {
-    await fetch('/api/ping');
+    const res = await fetch('/api/qr-status');
+    const data = await res.json();
+
+    if (data.status === 'CONNECTED') {
+      qrImage.classList.add('hidden');
+      qrLoader.classList.add('hidden');
+      qrConnectedCheck.classList.remove('hidden');
+      qrDeviceStatusText.textContent = "Status: WhatsApp Terhubung & Aktif";
+      qrDeviceStatusText.className = "text-xs font-semibold text-emerald-400";
+
+      statusBadge.className = "px-2.5 py-1 bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 rounded-full text-[10px] sm:text-xs font-semibold flex items-center gap-1.5 cursor-pointer";
+      statusBadgeText.textContent = "Connected (WA Aktif)";
+    } else if (data.qrDataUrl) {
+      qrImage.src = data.qrDataUrl;
+      qrImage.classList.remove('hidden');
+      qrLoader.classList.add('hidden');
+      qrConnectedCheck.classList.add('hidden');
+      qrDeviceStatusText.textContent = "Status: Menunggu Scan QR Code...";
+      qrDeviceStatusText.className = "text-xs font-semibold text-amber-400";
+
+      statusBadge.className = "px-2.5 py-1 bg-amber-500/10 text-amber-400 border border-amber-500/20 rounded-full text-[10px] sm:text-xs font-semibold flex items-center gap-1.5 cursor-pointer";
+      statusBadgeText.textContent = "Scan QR Code!";
+    }
   } catch(e){}
-}, 60000);
+}
 
 async function loadContacts() {
   try {
     const res = await fetch('/api/contacts');
     const contacts = await res.json();
     contactList.innerHTML = contacts.map(c => `
-      <div onclick="openChat('${c.jid}', '${escapeHtml(c.name)}', '${c.mode}')" class="p-3 hover:bg-slate-800 cursor-pointer flex justify-between items-center transition ${currentJid === c.jid ? 'bg-slate-800 border-l-4 border-emerald-500' : ''}">
-        <div>
-          <span class="font-semibold text-xs text-slate-200 block truncate">${escapeHtml(c.name)}</span>
-          <span class="text-[10px] text-slate-400 font-mono">${c.jid.split('@')[0]}</span>
+      <div onclick="openChat('${c.jid}', '${escapeHtml(c.name)}', '${c.mode}')" 
+           class="p-3 hover:bg-slate-800/60 cursor-pointer flex justify-between items-center transition ${currentJid === c.jid ? 'bg-slate-800 border-l-4 border-emerald-500' : ''}">
+        <div class="flex items-center space-x-2.5 overflow-hidden">
+          <div class="w-8 h-8 rounded-full bg-slate-800 flex items-center justify-center text-slate-200 font-bold text-xs shrink-0 border border-slate-700">
+            ${escapeHtml(c.name).charAt(0).toUpperCase()}
+          </div>
+          <div class="truncate">
+            <span class="font-semibold text-xs text-slate-200 block truncate">${escapeHtml(c.name)}</span>
+            <span class="text-[10px] text-slate-400 font-mono">${c.jid.split('@')[0]}</span>
+          </div>
         </div>
-        <span class="text-[9px] px-2 py-0.5 rounded-full font-bold uppercase ${c.mode === 'bot' ? 'bg-blue-500/20 text-blue-400' : 'bg-emerald-500/20 text-emerald-400'}">${c.mode}</span>
+        <span class="text-[9px] px-2 py-0.5 rounded-full font-bold uppercase shrink-0 ${c.mode === 'bot' ? 'bg-blue-500/10 text-blue-400 border border-blue-500/20' : 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'}">
+          ${c.mode}
+        </span>
       </div>
     `).join('');
   } catch(e){}
@@ -44,18 +88,21 @@ async function openChat(jid, name, mode) {
   currentJid = jid;
   activeChatName.textContent = name;
   activeJid.textContent = jid.split('@')[0];
+  avatarLetter.textContent = name.charAt(0).toUpperCase();
   modeToggle.value = mode;
+  emptyChatPlaceholder?.classList.add('hidden');
 
   const res = await fetch(`/api/messages/${jid}`);
   const msgs = await res.json();
   messageList.innerHTML = msgs.map(m => `
-    <div class="flex ${m.sender_type === 'user' ? 'justify-start' : 'justify-end'}">
-      <div class="max-w-[75%] p-3 rounded-2xl text-xs ${m.sender_type === 'user' ? 'bg-slate-900 text-slate-100 border border-slate-800' : 'bg-emerald-950 text-emerald-100 border border-emerald-800/40'}">
-        <div class="text-[9px] font-bold uppercase mb-1 ${m.sender_type === 'user' ? 'text-slate-400' : 'text-emerald-400'}">${m.sender_type}</div>
-        <div class="whitespace-pre-wrap">${escapeHtml(m.text)}</div>
+    <div class="flex ${m.senderType === 'user' ? 'justify-start' : 'justify-end'}">
+      <div class="max-w-[85%] sm:max-w-[70%] p-3 rounded-2xl shadow-lg text-xs ${m.senderType === 'user' ? 'bg-slate-900 text-slate-100 border border-slate-800' : 'bg-emerald-950/70 text-emerald-100 border border-emerald-800/40'}">
+        <div class="text-[9px] font-bold uppercase tracking-wider mb-1 ${m.senderType === 'user' ? 'text-slate-400' : 'text-emerald-400'}">${m.senderType}</div>
+        <div class="whitespace-pre-wrap leading-relaxed">${escapeHtml(m.text)}</div>
       </div>
     </div>
   `).join('');
+  messageList.scrollTop = messageList.scrollHeight;
 }
 
 modeToggle.addEventListener('change', async (e) => {
@@ -68,7 +115,32 @@ modeToggle.addEventListener('change', async (e) => {
   loadContacts();
 });
 
+sendBtn.addEventListener('click', sendMessage);
+msgInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') sendMessage(); });
+
+async function sendMessage() {
+  const text = msgInput.value.trim();
+  if (!text || !currentJid) return;
+
+  if (modeToggle.value === 'bot') {
+    alert('Ubah status ke CS Admin (Human) untuk membalas manual!');
+    return;
+  }
+
+  msgInput.value = '';
+  await fetch('/api/webhook/message', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ jid: currentJid, text, pushName: activeChatName.textContent })
+  });
+
+  openChat(currentJid, activeChatName.textContent, modeToggle.value);
+}
+
 function escapeHtml(str) { return str ? str.replace(/[&<>"']/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m])) : ''; }
 
+// Run Initial Functions
 loadContacts();
-setInterval(loadContacts, 8000);
+syncQrCodeStatus();
+setInterval(loadContacts, 6000);
+setInterval(syncQrCodeStatus, 3000);
