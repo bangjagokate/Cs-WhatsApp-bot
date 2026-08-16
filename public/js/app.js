@@ -11,7 +11,7 @@ const sendBtn = document.getElementById('sendBtn');
 const enableNotifBtn = document.getElementById('enableNotifBtn');
 const emptyChatPlaceholder = document.getElementById('emptyChatPlaceholder');
 
-// Modal Elements
+// QR Modal Elements
 const qrModal = document.getElementById('qrModal');
 const qrImage = document.getElementById('qrImage');
 const qrLoader = document.getElementById('qrLoader');
@@ -31,7 +31,7 @@ enableNotifBtn?.addEventListener('click', () => {
   }
 });
 
-// Realtime QR Code Polling Engine dari Remote Database API
+// Polling Engine QR Code dari Server Endpoint Vercel
 async function syncQrCodeStatus() {
   try {
     const res = await fetch('/api/qr-status');
@@ -41,11 +41,11 @@ async function syncQrCodeStatus() {
       qrImage.classList.add('hidden');
       qrLoader.classList.add('hidden');
       qrConnectedCheck.classList.remove('hidden');
-      qrDeviceStatusText.textContent = "Status: WhatsApp Terhubung & Aktif";
+      qrDeviceStatusText.textContent = "Status: WhatsApp Terhubung & Aktif 24/7";
       qrDeviceStatusText.className = "text-xs font-semibold text-emerald-400";
 
-      statusBadge.className = "px-2.5 py-1 bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 rounded-full text-[10px] sm:text-xs font-semibold flex items-center gap-1.5 cursor-pointer";
-      statusBadgeText.textContent = "Connected (WA Aktif)";
+      statusBadge.className = "px-3 py-1.5 bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 rounded-xl text-xs font-bold flex items-center gap-1.5 cursor-pointer shadow-lg";
+      statusBadgeText.textContent = "WA Connected";
     } else if (data.qrDataUrl) {
       qrImage.src = data.qrDataUrl;
       qrImage.classList.remove('hidden');
@@ -54,8 +54,8 @@ async function syncQrCodeStatus() {
       qrDeviceStatusText.textContent = "Status: Menunggu Scan QR Code...";
       qrDeviceStatusText.className = "text-xs font-semibold text-amber-400";
 
-      statusBadge.className = "px-2.5 py-1 bg-amber-500/10 text-amber-400 border border-amber-500/20 rounded-full text-[10px] sm:text-xs font-semibold flex items-center gap-1.5 cursor-pointer";
-      statusBadgeText.textContent = "Scan QR Code!";
+      statusBadge.className = "px-3 py-1.5 bg-amber-500/20 text-amber-300 border border-amber-500/30 rounded-xl text-xs font-bold flex items-center gap-1.5 cursor-pointer shadow-lg";
+      statusBadgeText.textContent = "Scan QR WA";
     }
   } catch(e){}
 }
@@ -139,8 +139,8 @@ async function sendMessage() {
 
 function escapeHtml(str) { return str ? str.replace(/[&<>"']/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m])) : ''; }
 
-// Run Initial Functions
+// Init Run
 loadContacts();
 syncQrCodeStatus();
-setInterval(loadContacts, 6000);
+setInterval(loadContacts, 5000);
 setInterval(syncQrCodeStatus, 3000);
