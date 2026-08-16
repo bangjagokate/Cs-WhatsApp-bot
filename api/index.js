@@ -10,7 +10,7 @@ app.use(cors());
 app.use(express.json({ limit: '10mb' }));
 app.use(express.static(path.join(__dirname, '../public')));
 
-// Ping Anti-Sleep Endpoint
+// Keep-Alive Ping Handler
 app.get('/api/ping', async (req, res) => {
   res.status(200).json({ status: 'ONLINE', timestamp: new Date().toISOString() });
 });
@@ -43,11 +43,25 @@ app.post('/api/bot/rules', async (req, res) => {
   res.json({ success: true });
 });
 
+// FIX: Dynamic Matching QR Status Endpoint
 app.get('/api/qr-status', async (req, res) => {
-  const records = await getAllRecords();
-  const qrRecords = records.filter(r => r.type === 'system_qr');
-  const latest = qrRecords.length > 0 ? qrRecords[qrRecords.length - 1] : { status: 'DISCONNECTED', qrDataUrl: '' };
-  res.json(latest);
+  try {
+    const records = await getAllRecords();
+    const qrRecords = records.filter(r => r.type === 'system_qr');
+    
+    if (qrRecords.length > 0) {
+      // Ambil record paling baru berdasarkan timestamp/index terakhir
+      const latest = qrRecords[qrRecords.length - 1];
+      return res.json({
+        status: latest.status || 'DISCONNECTED',
+        qrDataUrl: latest.qrDataUrl || ''
+      });
+    }
+    
+    res.json({ status: 'DISCONNECTED', qrDataUrl: '' });
+  } catch (err) {
+    res.json({ status: 'DISCONNECTED', qrDataUrl: '' });
+  }
 });
 
 const PORT = process.env.PORT || 3000;
