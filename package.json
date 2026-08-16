@@ -1,11 +1,10 @@
 {
   "name": "cs-whats-app-bot",
-  "version": "10.5.0",
-  "description": "WA CS Center & Bot Engine for Vercel Hobby Tier",
+  "version": "15.0.0",
+  "description": "Full Cloud WhatsApp CS & Bot Engine on Vercel Serverless",
   "main": "api/index.js",
   "scripts": {
-    "start": "node api/index.js",
-    "build": "echo 'Build Completed Successfully'"
+    "start": "node api/index.js"
   },
   "dependencies": {
     "cors": "^2.8.5",
