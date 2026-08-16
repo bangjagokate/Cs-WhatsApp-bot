@@ -3,15 +3,26 @@ const cors = require('cors');
 const path = require('path');
 require('dotenv').config();
 
-const { getContacts, getMessages, getBotRules, saveOrUpdateContact, saveMessage, saveBotRule } = require('../config/database');
-const { processBotLogic } = require('../services/botEngine');
+const { getContacts, getMessages, getBotRules, saveOrUpdateContact, saveMessage, saveBotRule, getAllRecords } = require('../config/database');
 
 const app = express();
 app.use(cors());
 app.use(express.json({ limit: '10mb' }));
 app.use(express.static(path.join(__dirname, '../public')));
 
-// API Endpoints
+// 🔄 KEEP-ALIVE ANTI-SLEEP PING ENDPOINT
+app.get('/api/ping', async (req, res) => {
+  const timestamp = new Date().toISOString();
+  console.log(`[Vercel Anti-Sleep Ping] Service pinged at ${timestamp}`);
+  res.status(200).json({
+    status: 'ONLINE',
+    system: 'Vercel Serverless CS Engine',
+    timestamp: timestamp,
+    message: 'Server is active and prevented from sleeping.'
+  });
+});
+
+// REST API Endpoints
 app.get('/api/contacts', async (req, res) => {
   const contacts = await getContacts();
   res.json(contacts);
@@ -39,16 +50,16 @@ app.post('/api/bot/rules', async (req, res) => {
   res.json({ success: true });
 });
 
-// Incoming Webhook simulation for message processing
-app.post('/api/webhook/message', async (req, res) => {
-  const { jid, text, pushName } = req.body;
-  const reply = await processBotLogic(jid, text, pushName || 'Pelanggan');
-  res.json({ success: true, reply });
+app.get('/api/qr-status', async (req, res) => {
+  const records = await getAllRecords();
+  const qrRecords = records.filter(r => r.type === 'system_qr');
+  const latest = qrRecords.length > 0 ? qrRecords[qrRecords.length - 1] : { status: 'DISCONNECTED', qrDataUrl: '' };
+  res.json(latest);
 });
 
 const PORT = process.env.PORT || 3000;
 if (require.main === module) {
-  app.listen(PORT, () => console.log(`CS Center Server running on port ${PORT}`));
+  app.listen(PORT, () => console.log(`Vercel Serverless Server running on port ${PORT}`));
 }
 
 module.exports = app;
