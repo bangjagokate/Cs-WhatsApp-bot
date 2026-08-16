@@ -15,7 +15,7 @@ async function getAllRecords() {
     const data = await response.json();
     return Array.isArray(data) ? data : (data.records || []);
   } catch (error) {
-    console.error('Remote DB Get Error:', error.message);
+    console.error('Remote DB Fetch Error:', error.message);
     return [];
   }
 }
@@ -32,7 +32,7 @@ async function createRecord(recordData) {
     });
     return await response.json();
   } catch (error) {
-    console.error('Remote DB Create Error:', error.message);
+    console.error('Remote DB Post Error:', error.message);
     return null;
   }
 }
@@ -57,12 +57,11 @@ async function saveOrUpdateContact(jid, data) {
   const existing = contacts.find(c => c.jid === jid);
 
   if (existing) {
-    const updatedPayload = {
+    await createRecord({
       ...existing,
       ...data,
       updatedAt: new Date().toISOString()
-    };
-    await createRecord(updatedPayload);
+    });
   } else {
     await createRecord({
       type: 'contact',
